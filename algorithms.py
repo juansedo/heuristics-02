@@ -50,3 +50,13 @@ def ILS(
         else:
             failed_iterations += 1
     return solution
+
+def MS_ILS(
+    nsol, initial_solution_rand, hood_callback, shuffle_callback: Callable[[List], List]
+):
+    best_solution = None
+    for i in range(nsol):
+        solution = ILS(initial_solution_rand, hood_callback, shuffle_callback)
+        if not best_solution or Z(solution) < Z(best_solution):
+            best_solution = solution
+    return best_solution
