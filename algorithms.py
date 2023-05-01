@@ -1,62 +1,87 @@
 import random
 from typing import Callable, List
 
-from utils import objective_func as Z
+from utils import compare_plot, real_objective_func as Z
+from problem import Problem
+import time
 
-
-def VND(initial_solution, hood_callback: Callable[[List], List]):
+def VND(problem: Problem, initial_solution: Callable[[], dict]):
     j = 0
-    solution = initial_solution()
-    neighbours = hood_callback(solution)
+    first_solution = initial_solution()
+    best_solution = first_solution
+    print(f'Z: {problem.Z(best_solution)}')
 
-    while j < len(neighbours):
-        solution_aux = neighbours[j]
-        if Z(solution_aux) < Z(solution):
+    while j < 3:
+        if j == 0: best_neighbor = problem.swapping(best_solution)
+        elif j == 1: best_neighbor = problem.insertion(best_solution)
+        elif j == 2: best_neighbor = problem.reversion(best_solution)
+
+        if problem.Z(best_neighbor) < problem.Z(best_solution):
             j = 0
-            solution = solution_aux
-            neighbours = hood_callback(solution)
+            best_solution = best_neighbor
         else:
             j += 1
-    return solution
 
-
-def RVNS(initial_solution, hood_callback: Callable[[List], List]):
-    j = 0
-    solution = initial_solution()
-    neighbours = random.shuffle(hood_callback(solution))
-
-    while j < len(neighbours):
-        solution_aux = neighbours[j]
-        if Z(solution_aux) < Z(solution):
-            j = 0
-            solution = solution_aux
-            neighbours = random.shuffle(hood_callback(solution))
-        else:
-            j += 1
-    return solution
-
-
-def ILS(
-    initial_solution, hood_callback, shuffle_callback: Callable[[List], List]
-):
-    failed_iterations = 0
-    solution = initial_solution()
-    while failed_iterations < 5:
-        disturbed_solution = shuffle_callback(solution)
-        best_local_solution = VND(lambda: disturbed_solution, hood_callback)
-        if Z(best_local_solution) < Z(solution):
-            solution = best_local_solution
-            failed_iterations = 0
-        else:
-            failed_iterations += 1
-    return solution
-
-def MS_ILS(
-    nsol, initial_solution_rand, hood_callback, shuffle_callback: Callable[[List], List]
-):
-    best_solution = None
-    for i in range(nsol):
-        solution = ILS(initial_solution_rand, hood_callback, shuffle_callback)
-        if not best_solution or Z(solution) < Z(best_solution):
-            best_solution = solution
+    print(f'Z: {problem.Z(best_solution)}')
+    compare_plot(problem.data, first_solution, best_solution)
     return best_solution
+
+
+def RVNS(problem: Problem, initial_solution: Callable[[], dict], t_max = 10):
+    j = 0
+    first_solution = initial_solution()
+    best_solution = first_solution
+    print(f'Z: {problem.Z(best_solution)}')
+
+    start = time.time()
+    end = start
+    while end - start < t_max:
+        while j < 3:
+            if j == 0: best_neighbor = problem.swapping(best_solution, rand=True)
+            elif j == 1: best_neighbor = problem.insertion(best_solution, rand=True)
+            elif j == 2: best_neighbor = problem.reversion(best_solution, rand=True)
+
+            if problem.Z(best_neighbor) < problem.Z(best_solution):
+                j = 0
+                best_solution = best_neighbor
+            else:
+                j += 1
+        end = time.time()
+
+    print(f'Z: {problem.Z(best_solution)}')
+    compare_plot(problem.data, first_solution, best_solution)
+    return best_solution
+
+# Multistart, Perturbed, Threshold Acceptance
+def MS_ILS(problem: Problem, initial_solution, nsol = 5):
+    solution = initial_solution()
+    first_solution = solution
+    best_solution = solution
+    print(f'Z: {problem.Z(best_solution)}')
+    for i in range(nsol):
+        failed_iterations = 0
+        best_local_solution = solution
+        while failed_iterations < 10:
+            j = 0
+            disturbed_solution = problem.shuffle(best_solution)
+            while j < 3:
+                if j == 0: best_neighbor = problem.swapping(disturbed_solution)
+                elif j == 1: best_neighbor = problem.insertion(disturbed_solution)
+                elif j == 2: best_neighbor = problem.reversion(disturbed_solution)
+
+                if problem.Z(best_neighbor) < problem.Z(best_local_solution) * 1.01:
+                    j = 0
+                    best_local_solution = best_neighbor
+                else:
+                    j += 1
+            
+            #print(f'Z(disturbed): {problem.Z(disturbed_solution)}, Z(local_best): {problem.Z(best_local_solution)}, Z(best): {problem.Z(best_solution)}')
+            if problem.Z(best_local_solution) < problem.Z(best_solution):
+                best_solution = best_local_solution
+                failed_iterations = 0
+            else:
+                failed_iterations += 1
+        solution = initial_solution()
+    print(f'Z: {problem.Z(best_solution)}')
+    compare_plot(problem.data, first_solution, best_solution)
+    return solution

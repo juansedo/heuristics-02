@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import random
-from utils import getDistance
+from utils import get_distance as getDistance
 
 def initialize(n, R, Q, data):
   availables = np.full(R, Q)
@@ -67,3 +67,13 @@ def run(n, R, Q, Th, alpha, data):
   total_time = (end - start) * 1000
 
   return [paths, total_distances, total_time]
+
+def runGRASP(n, R, Q, Th, data, iterations=20, alpha=0.02):
+    best = [None, None, None]
+    for i in range(iterations):
+        paths, distances, time = run(n, R, Q, Th, alpha, data)
+        if best[1] is None or sum(distances) < sum(best[1]):
+            best[0] = paths
+            best[1] = distances
+            best[2] = time
+    return best
