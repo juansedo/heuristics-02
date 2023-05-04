@@ -2,7 +2,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 import math
-
+import os
 
 # MOCK FUNCTIONS
 def objective_func(array):
@@ -128,9 +128,75 @@ def real_consistency_func(distance_matrix, demands, solution, Q, Th):
     return True
 
 
-def compare_plot(data, paths1, paths2):
-    fig, (ax1, ax2) = plt.subplots(1, 2)
+class BKS:
+    mtVRP1 = 546.29
+    mtVRP2 = 835.80
+    mtVRP3 = 858.58
+    mtVRP4 = 866.58
+    mtVRP5 = 829.45
+    mtVRP6 = 826.14
+    mtVRP7 = 1034.61
+    mtVRP8 = 1300.02
+    mtVRP9 = 1300.62
+    mtVRP10 = 1078.64
+    mtVRP11 = 845.48
+    mtVRP12 = 823.14
+    
+    def get_labels():
+        return [
+            "mtVRP1",
+            "mtVRP2",
+            "mtVRP3",
+            "mtVRP4",
+            "mtVRP5",
+            "mtVRP6",
+            "mtVRP7",
+            "mtVRP8",
+            "mtVRP9",
+            "mtVRP10",
+            "mtVRP11",
+            "mtVRP12",
+        ]
+    
+    def get_list():
+        return [
+            BKS.mtVRP1,
+            BKS.mtVRP2,
+            BKS.mtVRP3,
+            BKS.mtVRP4,
+            BKS.mtVRP5,
+            BKS.mtVRP6,
+            BKS.mtVRP7,
+            BKS.mtVRP8,
+            BKS.mtVRP9,
+            BKS.mtVRP10,
+            BKS.mtVRP11,
+            BKS.mtVRP12,
+        ]
 
+
+def save_plot(fig, title):
+    if os.path.exists('./outputs') == False:
+        os.mkdir('./outputs')
+    
+    filename = title + ".png"
+    path_plot = './outputs/' + filename
+    fig.savefig(path_plot, dpi=fig.dpi)
+
+
+def compare_plot(title, data, initial_sol, final_sol, index):
+    paths1, initial_Z = initial_sol
+    paths2, final_Z = final_sol 
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    
+    fig.suptitle(title, fontsize=16)
+
+    ax1.title.set_text('Before')
+    ax1.set_xlabel(f'Z: {round(initial_Z, 2)}', fontweight='bold', fontsize=14)
+
+    ax2.title.set_text('After')
+    ax2.set_xlabel(f'Z: {round(final_Z, 2)}', fontweight='bold', fontsize=14)
+    
     x = []
     y = []
     for node in data:
@@ -155,4 +221,24 @@ def compare_plot(data, paths1, paths2):
             y.append(data[node][2])
         ax2.plot(x, y, "-", label=f"Camión {p+1}")
 
-    plt.show()
+    #plt.show()
+    save_plot(fig, f"VND in mtVRP{index}")
+
+def summary_plot(filename, data):
+    plt.clf()
+    fig = plt.gcf()
+        
+    xitems = []
+    yitems = []
+    plt.plot(BKS.get_labels(), BKS.get_list(), color="C1")
+    plt.fill_between(BKS.get_labels(), BKS.get_list(), color="C1", alpha=0.3)
+    for key, value in data.items():
+        xitems = [item[0] for item in value]
+        yitems = [item[1] for item in value]
+        plt.plot(xitems, yitems, label=key, marker='o')
+        for i in range(len(xitems)):
+            plt.annotate(str(round(yitems[i], 2)), (xitems[i], yitems[i] * 1.05))
+    #plt.show()
+    fig.set_size_inches(12.5, 5.5)
+    fig.set_dpi(90)
+    save_plot(fig, filename)

@@ -9,7 +9,7 @@ def VND(problem: Problem, initial_solution: Callable[[], dict]):
     j = 0
     first_solution = initial_solution()
     best_solution = first_solution
-    print(f'Z: {problem.Z(best_solution)}')
+    initial_Z = problem.Z(best_solution)
 
     while j < 3:
         if j == 0: best_neighbor = problem.swapping(best_solution)
@@ -22,9 +22,8 @@ def VND(problem: Problem, initial_solution: Callable[[], dict]):
         else:
             j += 1
 
-    print(f'Z: {problem.Z(best_solution)}')
-    compare_plot(problem.data, first_solution, best_solution)
-    return best_solution
+    final_Z = problem.Z(best_solution)
+    return best_solution, [first_solution, initial_Z], [best_solution, final_Z]
 
 
 def RVNS(problem: Problem, initial_solution: Callable[[], dict], t_max = 10):
