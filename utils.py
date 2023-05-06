@@ -14,7 +14,7 @@ def factible_func(array):
 
 
 # STRATEGIES
-def get_optimal(distance_matrix, Q, Th, solutions):
+def get_optimal(distance_matrix, demands, Q, Th, solutions):
     optimal = solutions[0]
     for solution in solutions:
         if real_consistency_func(distance_matrix, demands, solution, Q, Th):

@@ -1,4 +1,6 @@
+from typing import List
 import random
+import copy
 
 class Problem:
     def __init__(self, distance_matrix, demands, n, R, Q, Th, data):
@@ -9,6 +11,43 @@ class Problem:
         self.Q = Q
         self.Th = Th
         self.data = data
+
+    def external_swapping(self, solution: dict, rand: bool = False):
+        truck = 0
+        truck_offset = 1
+        best_solution = {}
+        hood = []
+
+        while truck_offset < len(solution):
+            i = 1
+            j = 1
+            while True:
+                if (i < len(solution[truck]) - 1 and solution[truck][i] == 0): i += 1
+                if (j < len(solution[truck_offset]) - 1 and solution[truck_offset][j] == 0): j += 1
+                if (i >= len(solution[truck]) - 1) and (j >= len(solution[truck_offset]) - 1):
+                    truck_offset += 1
+                    break
+                
+                new_sol = copy.deepcopy(solution)
+                elem1 = new_sol[truck][i]
+                elem2 = new_sol[truck_offset][j]
+                new_sol[truck][i] = elem2
+                new_sol[truck_offset][j] = elem1
+                
+                if self.check_consistency_solution(new_sol):
+                    hood.append(new_sol)
+                if (j >= len(solution[truck_offset]) - 1):
+                    i += 1
+                    j = 1
+                else: j += 1
+
+
+        if len(hood) > 0:
+            if rand: best_solution = random.choice(hood)
+            else: best_solution = self.get_optimal_solution(hood)
+        else:
+            best_solution = solution
+        return best_solution
 
 
     def swapping(self, solution: dict, rand: bool = False):
@@ -82,11 +121,18 @@ class Problem:
         return shuffled_solution
 
 
-    def get_optimal(self, solutions: list):
-        optimal = solutions[0]
-        for path in solutions:
+    def get_optimal(self, possible_paths: list):
+        optimal = possible_paths[0]
+        for path in possible_paths:
             if self.calculate_path_distance(path) < self.calculate_path_distance(optimal):
                 optimal = path
+        return optimal
+
+    def get_optimal_solution(self, solutions: List[dict]):
+        optimal = solutions[0]
+        for sol in solutions:
+            if self.Z(sol) < self.Z(optimal):
+                optimal = sol
         return optimal
 
     # Check consistency
@@ -101,7 +147,11 @@ class Problem:
                 #print(f'|--Inconsistency in path {path} on position {i}')
                 return False
         return True
-    
+
+    def check_consistency_solution(self, solution: dict):
+        values: List[bool] = [self.check_consistency(path) for path in solution.values()]
+        return all(values)
+
     def calculate_path_distance(self, path: list):
         return sum([self.distance_matrix[path[i]][path[i + 1]] for i in range(len(path) - 1)])
     

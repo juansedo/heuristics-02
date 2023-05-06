@@ -7,10 +7,6 @@ from grasp import runGRASP as get_initial
 from files import get_test_file, Slides
 from utils import compare_plot
 from problem import Problem
-from pptx import Presentation
-from pptx.util import Inches, Pt
-from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_PARAGRAPH_ALIGNMENT
 
 def initial_solution_rand():
     solutions = []
@@ -52,8 +48,8 @@ def main():
         slides.generate_summary()
     else:
         best_sol = solve(args.file)
-        slides.add_method_slide("VND", f"VND in mtVRP{i}" + ".png")
-        slides.add_method_value("VND", f"mtVRP{i}", best_sol)
+        slides.add_method_slide("VND", f"VND in mtVRP{args.file}" + ".png")
+        slides.add_method_value("VND", f"mtVRP{args.file}", best_sol)
         slides.generate_summary()
         
     if (args.pptx):        
