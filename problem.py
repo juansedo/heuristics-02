@@ -165,7 +165,6 @@ class Problem:
                 optimal = sol
         return optimal
 
-    # Check consistency
     def check_consistency(self, path: list):
         amount = self.Q
         for i in range(len(path) - 1):
@@ -174,7 +173,6 @@ class Problem:
             if nextNode == 0: continue
             amount -= self.demands[nextNode]
             if amount < 0:
-                #print(f'|--Inconsistency in path {path} on position {i}')
                 return False
         return True
 
@@ -184,6 +182,9 @@ class Problem:
 
     def calculate_path_distance(self, path: list):
         return sum([self.distance_matrix[path[i]][path[i + 1]] for i in range(len(path) - 1)])
+    
+    def get_distance_array(self, solution: dict):
+        return [self.calculate_path_distance(path) for path in solution.values()]
     
     def calculate_lower_bound(self):
         sol = []

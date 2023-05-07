@@ -4,7 +4,7 @@ import argparse
 from algorithms import VND, MS_ILS
 from utils import generate_distance_matrix, rimraf
 from grasp import runGRASP as get_initial
-from files import get_test_file, Slides
+from files import get_test_file, Slides, ExcelBook
 from utils import compare_plot, summary_time_plot
 from problem import Problem
 
@@ -14,7 +14,7 @@ def initial_solution_rand():
         solutions.append(initial_solution())
     return list(random.choice(solutions))
 
-def solve(method, index):
+def solve(method, index, excelBook: ExcelBook):
     headers, data = get_test_file(index)
     n, R, Q, Th = headers
     distance_matrix, demands = generate_distance_matrix(data, n)
@@ -33,6 +33,8 @@ def solve(method, index):
         best_sol, initial, final = MS_ILS(problem, initial_solution)
         compare_plot("MS_ILS", "MS_ILS in mtVRP" + str(index), problem.data, initial, final, index)
         print(f'Instance mtVRP{index} (MS_ILS) -> Z: {final[1]} ({final[2]} s)')
+    distances = problem.get_distance_array(final[0])
+    excelBook.add_sheet(str(index), [final[0], distances, final[2]], problem.Th)
     
     return [final[1], final[2]]
 
@@ -43,21 +45,27 @@ def main():
     args = parser.parse_args()
     if (args.file): args.file = list(set(args.file))
 
+    author = 'JSDIAZO'
     slides = Slides("Local search results", "Presented by: Juan Sebastián Díaz Osorio")
+    vndExcel = ExcelBook(f'mtVRP_{author}_Constructivo.xlsx')
+    msIlsExcel = ExcelBook(f'mtVRP_{author}_GRASP.xlsx')
 
     rimraf('./outputs/')
 
     iterator = args.file if args.file else range(1, 13)
     for i in iterator:
-        best_solution = solve("VND", i)
+        best_solution = solve("VND", i, vndExcel)
         slides.add_method_slide("VND", i)
         slides.add_method_value("VND", f"mtVRP{i}", best_solution)
-        best_solution = solve("MS_ILS", i)
+        
+        best_solution = solve("MS_ILS", i, msIlsExcel)
         slides.add_method_slide("MS_ILS", i)
         slides.add_method_value("MS_ILS", f"mtVRP{i}", best_solution)
     if (args.file is None or len(args.file) > 1):
         slides.generate_timeplot()
     slides.generate_summary()
+    vndExcel.save()
+    msIlsExcel.save()
 
     if (args.no_pptx == False):
         slides.save('Local Search Report.pptx')
