@@ -128,12 +128,13 @@ class Problem:
         shuffled_solution = copy.deepcopy(solution)
         trucks = len(shuffled_solution)
         
-        for i in range(3):
+        for i in range(5):
             try:
                 nodes_to_steal = random.randint(1, 3)
                 path1 = random.randint(0, trucks - 1)
                 path2 = random.randint(0, trucks - 1)
 
+                if len(shuffled_solution[path1]) <= nodes_to_steal + 2: continue
                 lb = random.randint(1, len(shuffled_solution[path1]) - 1 - nodes_to_steal)
                 nodes = shuffled_solution[path1][lb:lb + nodes_to_steal]
                 shuffled_solution[path1] = shuffled_solution[path1][:lb] + shuffled_solution[path1][lb + nodes_to_steal:]
