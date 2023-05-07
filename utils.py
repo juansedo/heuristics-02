@@ -4,6 +4,21 @@ import numpy as np
 import math
 import os
 
+def rimraf(folder_path):
+    if len(os.listdir(folder_path)) > 0:
+        answer = input(f"There are files on the {folder_path} folder, are you sure to delete them? (Y/n): ")
+        if answer == "n" or answer == "N":
+            print("Files will not be to deleted")
+            return
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(f'Failed to delete {file_path}. Reason: {e}')
+        print("Files deleted successfully")
+
 # MOCK FUNCTIONS
 def objective_func(array):
     return array[0] + array[5] + array[9]
@@ -184,17 +199,17 @@ def save_plot(fig, title):
     fig.savefig(path_plot, dpi=fig.dpi)
 
 
-def compare_plot(title, data, initial_sol, final_sol, index):
-    paths1, initial_Z = initial_sol
-    paths2, final_Z = final_sol 
+def compare_plot(method, title, data, initial_sol, final_sol, index):
+    paths1, initial_Z, initial_time = initial_sol
+    paths2, final_Z, final_time = final_sol
     fig, (ax1, ax2) = plt.subplots(1, 2)
     
     fig.suptitle(title, fontsize=16)
 
-    ax1.title.set_text('Before')
+    ax1.title.set_text(f'Before ({round(initial_time, 2)} s)')
     ax1.set_xlabel(f'Z: {round(initial_Z, 2)}', fontweight='bold', fontsize=14)
 
-    ax2.title.set_text('After')
+    ax2.title.set_text(f'After ({round(final_time, 2)} s)')
     ax2.set_xlabel(f'Z: {round(final_Z, 2)}', fontweight='bold', fontsize=14)
     
     x = []
@@ -222,7 +237,33 @@ def compare_plot(title, data, initial_sol, final_sol, index):
         ax2.plot(x, y, "-", label=f"Camión {p+1}")
 
     #plt.show()
-    save_plot(fig, f"VND in mtVRP{index}")
+    save_plot(fig, f"{method}-mtVRP{index}")
+
+def summary_time_plot(filename, labels, total_times = None):
+    if (len(labels) == 0 or len(total_times) == 0): return
+    
+    plt.clf()
+    fig = plt.gcf()
+    ax = plt.gca()
+
+    size = np.arange(len(labels))
+    width = 0.3
+    if ('VND' in total_times):
+        bar1 = ax.bar(size - width/2, total_times['VND'], width, label='VND')
+        ax.bar_label(bar1)
+    if ('MS_ILS' in total_times):
+        bar2 = ax.bar(size + width/2, total_times['MS_ILS'], width, label='MS_ILS')
+        ax.bar_label(bar2)
+
+    ax.set_ylabel('Compute time (seconds)')
+    ax.set_title('Algorithms comparison')
+    ax.set_xticks(size, labels)
+    ax.legend(loc='upper left', ncols=1)
+    
+    fig.set_size_inches(12.5, 5.5)
+    fig.set_dpi(90)
+    save_plot(fig, filename)
+
 
 def summary_plot(filename, data):
     plt.clf()
@@ -230,15 +271,16 @@ def summary_plot(filename, data):
         
     xitems = []
     yitems = []
-    plt.plot(BKS.get_labels(), BKS.get_list(), color="C1")
-    plt.fill_between(BKS.get_labels(), BKS.get_list(), color="C1", alpha=0.3)
+    plt.plot(BKS.get_labels(), BKS.get_list(), color="C2")
+    plt.fill_between(BKS.get_labels(), BKS.get_list(), color="C2", alpha=0.3)
     for key, value in data.items():
         xitems = [item[0] for item in value]
         yitems = [item[1] for item in value]
         plt.plot(xitems, yitems, label=key, marker='o')
         for i in range(len(xitems)):
             plt.annotate(str(round(yitems[i], 2)), (xitems[i], yitems[i] * 1.05))
-    #plt.show()
+
+    plt.legend(loc='upper left', ncols=1)
     fig.set_size_inches(12.5, 5.5)
     fig.set_dpi(90)
     save_plot(fig, filename)

@@ -11,8 +11,8 @@ class Problem:
         self.Q = Q
         self.Th = Th
         self.data = data
-
-    def external_swapping(self, solution: dict, rand: bool = False):
+        
+    def _handle_solution(self, solution: dict, transformer, rand: bool = False):
         truck = 0
         truck_offset = 1
         best_solution = {}
@@ -22,25 +22,20 @@ class Problem:
             i = 1
             j = 1
             while True:
-                if (i < len(solution[truck]) - 1 and solution[truck][i] == 0): i += 1
-                if (j < len(solution[truck_offset]) - 1 and solution[truck_offset][j] == 0): j += 1
-                if (i >= len(solution[truck]) - 1) and (j >= len(solution[truck_offset]) - 1):
-                    truck_offset += 1
-                    break
-                
-                new_sol = copy.deepcopy(solution)
-                elem1 = new_sol[truck][i]
-                elem2 = new_sol[truck_offset][j]
-                new_sol[truck][i] = elem2
-                new_sol[truck_offset][j] = elem1
-                
-                if self.check_consistency_solution(new_sol):
-                    hood.append(new_sol)
+                if (i < len(solution[truck_offset]) and solution[truck_offset][i] == 0): i += 1
+                if (j < len(solution[truck_offset]) and solution[truck_offset][j] == 0): j += 1
                 if (j >= len(solution[truck_offset]) - 1):
                     i += 1
                     j = 1
-                else: j += 1
+                if (i >= len(solution[truck]) - 1):
+                    truck_offset += 1
+                    break
 
+                new_sol = transformer(solution, truck, truck_offset, i, j)
+                
+                if self.check_consistency_solution(new_sol):
+                    hood.append(new_sol)
+                j += 1
 
         if len(hood) > 0:
             if rand: best_solution = random.choice(hood)
@@ -48,6 +43,25 @@ class Problem:
         else:
             best_solution = solution
         return best_solution
+    
+    def _external_swapping(self, solution, truck, truck_offset, i, j):
+        new_sol = copy.deepcopy(solution)
+        elem1 = new_sol[truck][i]
+        elem2 = new_sol[truck_offset][j]
+        new_sol[truck][i] = elem2
+        new_sol[truck_offset][j] = elem1
+        return new_sol
+    
+    def _external_insertion(self, solution, truck, truck_offset, i, j):
+        new_sol = copy.deepcopy(solution)
+        new_sol[truck_offset].insert(j, new_sol[truck].pop(i))
+        return new_sol
+
+    def external_swapping(self, solution: dict, rand: bool = False):
+        return self._handle_solution(solution, self._external_swapping, rand)
+    
+    def external_insertion(self, solution: dict, rand: bool = False):
+        return self._handle_solution(solution, self._external_insertion, rand)
 
 
     def swapping(self, solution: dict, rand: bool = False):
@@ -111,7 +125,23 @@ class Problem:
     
     def shuffle(self, solution: dict):
         truck = 0
-        shuffled_solution = {}
+        shuffled_solution = copy.deepcopy(solution)
+        trucks = len(shuffled_solution)
+        
+        for i in range(3):
+            try:
+                nodes_to_steal = random.randint(1, 3)
+                path1 = random.randint(0, trucks - 1)
+                path2 = random.randint(0, trucks - 1)
+
+                lb = random.randint(1, len(shuffled_solution[path1]) - 1 - nodes_to_steal)
+                nodes = shuffled_solution[path1][lb:lb + nodes_to_steal]
+                shuffled_solution[path1] = shuffled_solution[path1][:lb] + shuffled_solution[path1][lb + nodes_to_steal:]
+                lb = random.randint(1, len(shuffled_solution[path2]) - 1)
+                shuffled_solution[path2] = shuffled_solution[path2][:lb] + nodes + shuffled_solution[path2][lb:]
+            except:
+                pass
+        
         for s in solution.values():
             arr = s.copy()
             arr = arr[1:-1]

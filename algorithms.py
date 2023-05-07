@@ -1,5 +1,4 @@
-import random
-from typing import Callable, List
+from typing import Callable
 
 from utils import compare_plot, real_objective_func as Z
 from problem import Problem
@@ -7,9 +6,8 @@ import time
 
 def VND(problem: Problem, initial_solution: Callable[[], dict]):
     j = 0
-    first_solution = initial_solution()
+    first_solution, initial_time = initial_solution()
     best_solution = first_solution
-    initial_Z = problem.Z(best_solution)
     
     hoods = [
         problem.swapping,
@@ -18,17 +16,19 @@ def VND(problem: Problem, initial_solution: Callable[[], dict]):
         problem.reversion,
     ]
 
+    start = time.time()
     while j < len(hoods):
         best_neighbor = hoods[j](best_solution)
-
         if problem.Z(best_neighbor) < problem.Z(best_solution):
             j = 0
             best_solution = best_neighbor
         else:
             j += 1
+    final_time = time.time() - start
 
+    initial_Z = problem.Z(first_solution)
     final_Z = problem.Z(best_solution)
-    return best_solution, [first_solution, initial_Z], [best_solution, final_Z]
+    return best_solution, [first_solution, round(initial_Z, 2), round(initial_time, 2)], [best_solution, round(final_Z, 2), round(final_time, 2)]
 
 
 def RVNS(problem: Problem, initial_solution: Callable[[], dict], t_max = 10):
@@ -58,34 +58,42 @@ def RVNS(problem: Problem, initial_solution: Callable[[], dict], t_max = 10):
 
 # Multistart, Perturbed, Threshold Acceptance
 def MS_ILS(problem: Problem, initial_solution, nsol = 5):
-    solution = initial_solution()
-    first_solution = solution
-    best_solution = solution
-    print(f'Z: {problem.Z(best_solution)}')
+    first_solution, initial_time = initial_solution()
+    best_solution = first_solution
+    sol = first_solution
+    
+    hoods = [
+        problem.swapping,
+        problem.external_swapping,
+        problem.insertion,
+        problem.reversion,
+    ]
+
+    start = time.time()
     for i in range(nsol):
         failed_iterations = 0
-        best_local_solution = solution
-        while failed_iterations < 10:
+        best_local_solution = sol
+        while failed_iterations < 2:
             j = 0
-            disturbed_solution = problem.shuffle(best_solution)
-            while j < 3:
-                if j == 0: best_neighbor = problem.swapping(disturbed_solution)
-                elif j == 1: best_neighbor = problem.insertion(disturbed_solution)
-                elif j == 2: best_neighbor = problem.reversion(disturbed_solution)
-
-                if problem.Z(best_neighbor) < problem.Z(best_local_solution) * 1.01:
+            disturbed_solution = problem.shuffle(best_local_solution)
+            best_local_solution = disturbed_solution
+            while j < len(hoods):
+                best_neighbor = hoods[j](best_local_solution)
+                if problem.Z(best_neighbor) < problem.Z(best_local_solution):
                     j = 0
                     best_local_solution = best_neighbor
                 else:
                     j += 1
             
-            #print(f'Z(disturbed): {problem.Z(disturbed_solution)}, Z(local_best): {problem.Z(best_local_solution)}, Z(best): {problem.Z(best_solution)}')
+            #print(f'{problem.Z(best_local_solution)} < {problem.Z(best_solution)} || {failed_iterations}')
             if problem.Z(best_local_solution) < problem.Z(best_solution):
                 best_solution = best_local_solution
-                failed_iterations = 0
             else:
                 failed_iterations += 1
-        solution = initial_solution()
-    print(f'Z: {problem.Z(best_solution)}')
-    compare_plot(problem.data, first_solution, best_solution)
-    return solution
+        best_local_solution = initial_solution()
+
+    final_time = time.time() - start
+
+    initial_Z = problem.Z(first_solution)
+    final_Z = problem.Z(best_solution)
+    return best_solution, [first_solution, round(initial_Z, 2), round(initial_time, 2)], [best_solution, round(final_Z, 2), round(final_time, 2)]

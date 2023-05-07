@@ -2,7 +2,7 @@ from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_PARAGRAPH_ALIGNMENT
-from utils import summary_plot
+from utils import summary_plot, summary_time_plot
 
 def get_test_file(id):
     with open(f"data/mtVRP{id}.txt") as f:
@@ -34,8 +34,9 @@ class Slides:
         slide.placeholders[1].text_frame.paragraphs[0].font.color.rgb = RGBColor(0, 0, 0)
         slide.placeholders[1].text_frame.paragraphs[0].font.size = Pt(16)
     
-    def add_method_slide(self, method, filename, description = ''):
+    def add_method_slide(self, method, file_id, description = ''):
         slide = self.prs.slides.add_slide(self.image_slide_layout)
+        filename = f"{method}-mtVRP{file_id}.png"
         
         slide.shapes.title.text = method + " results"
         slide.shapes.title.bold = True
@@ -56,13 +57,38 @@ class Slides:
     
     def add_method_value(self, method, filename, value):
         if (not method in self.data): self.data[method] = []
-        self.data[method].append([filename, value])
+        self.data[method].append([filename, value[0], value[1]])
+    
+    def generate_timeplot(self):
+        labels = []
+        total_times = {}
+        if ('VND' in self.data):
+            labels = [item[0] for item in self.data['VND']]
+            total_times['VND'] = [item[2] for item in self.data['VND']]
+        if ('MS_ILS' in self.data):
+            labels = [item[0] for item in self.data['MS_ILS']]
+            total_times['MS_ILS'] = [item[2] for item in self.data['MS_ILS']]
+        summary_time_plot("time_summary", labels, total_times)
+        
+        slide = self.prs.slides.add_slide(self.image_slide_layout)
+        
+        slide.shapes.title.text = "Time comparison"
+        slide.shapes.title.bold = True
+        slide.shapes.add_picture(Slides.output_path + "time_summary.png", left=Inches(0.25), top=Inches(1.5), width=Inches(9.5), height=Inches(5.5))
+        
+        txBox = slide.shapes.add_textbox(left=Inches(9), top=Inches(6.75), width=Inches(1), height=Inches(1))
+        p = txBox.text_frame.add_paragraph()
+        p.text = str('{}/{}'.format(self.page, self.total_pages))
+        p.font.size = Pt(10)
+        
+        self.page += 1
+        
 
     def generate_summary(self):
         summary_plot("summary", self.data)
         slide = self.prs.slides.add_slide(self.image_slide_layout)
         
-        slide.shapes.title.text = "General comparison"
+        slide.shapes.title.text = "Solution comparison"
         slide.shapes.title.bold = True
         slide.shapes.add_picture(Slides.output_path + "summary.png", left=Inches(0.25), top=Inches(1.5), width=Inches(9.5), height=Inches(5.5))
         
@@ -75,4 +101,3 @@ class Slides:
 
     def save(self, filename):
         self.prs.save(filename)
-
