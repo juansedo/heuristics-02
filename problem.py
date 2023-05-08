@@ -18,24 +18,25 @@ class Problem:
         best_solution = {}
         hood = []
 
-        while truck_offset < len(solution):
-            i = 1
-            j = 1
-            while True:
-                if (i < len(solution[truck_offset]) and solution[truck_offset][i] == 0): i += 1
-                if (j < len(solution[truck_offset]) and solution[truck_offset][j] == 0): j += 1
-                if (j >= len(solution[truck_offset]) - 1):
-                    i += 1
-                    j = 1
-                if (i >= len(solution[truck]) - 1):
-                    truck_offset += 1
-                    break
+        i = 1
+        j = 1
 
-                new_sol = transformer(solution, truck, truck_offset, i, j)
-                
-                if self.check_consistency_solution(new_sol):
-                    hood.append(new_sol)
-                j += 1
+        while truck_offset < len(solution):
+            if (i < len(solution[truck_offset]) - 1 and solution[truck_offset][i] == 0): i += 1
+            if (j < len(solution[truck_offset]) - 1 and solution[truck_offset][j] == 0): j += 1
+            if (j >= len(solution[truck_offset]) - 1):
+                i += 1
+                j = 1
+            if (i >= len(solution[truck]) - 1):
+                truck_offset += 1
+                i = 1
+                j = 1
+                continue
+            new_sol = transformer(solution, truck, truck_offset, i, j)
+            
+            if self.check_consistency_solution(new_sol):
+                hood.append(new_sol)
+            j += 1
 
         if len(hood) > 0:
             if rand: best_solution = random.choice(hood)
@@ -45,12 +46,16 @@ class Problem:
         return best_solution
     
     def _external_swapping(self, solution, truck, truck_offset, i, j):
-        new_sol = copy.deepcopy(solution)
-        elem1 = new_sol[truck][i]
-        elem2 = new_sol[truck_offset][j]
-        new_sol[truck][i] = elem2
-        new_sol[truck_offset][j] = elem1
-        return new_sol
+        try:
+            new_sol = copy.deepcopy(solution)
+            elem1 = new_sol[truck][i]
+            new_sol[truck][i] = new_sol[truck_offset][j]
+            new_sol[truck_offset][j] = elem1
+            return new_sol
+        except:
+            print(f'WARNING: ({truck},{truck_offset},{i},{j}) ON')
+            print(solution)
+            return solution
     
     def _external_insertion(self, solution, truck, truck_offset, i, j):
         new_sol = copy.deepcopy(solution)

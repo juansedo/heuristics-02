@@ -47,8 +47,8 @@ def main():
 
     author = 'JSDIAZO'
     slides = Slides("Local search results", "Presented by: Juan Sebastián Díaz Osorio")
-    vndExcel = ExcelBook(f'mtVRP_{author}_Constructivo.xlsx')
-    msIlsExcel = ExcelBook(f'mtVRP_{author}_GRASP.xlsx')
+    vndExcel = ExcelBook(f'mtVRP_{author}_VND.xls')
+    msIlsExcel = ExcelBook(f'mtVRP_{author}_MSILS.xls')
 
     rimraf('./outputs/')
 
